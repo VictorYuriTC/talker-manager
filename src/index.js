@@ -14,10 +14,32 @@ const validUser = {
   password: '123456',
 };
 
+const isEmailValid = (email) => /\S+@\S+\.\S+/.test(email);
+const isPasswordValid = (password) => password.length >= 6;
+
 const validateLogin = async (req, res, next) => {
-  if (req.body === validUser) {
-    next();
+  if ('email' in req === '' || 'email' in req === undefined) {
+    return res.status(400).json('oi');
   }
+  if (!isEmailValid('email' in req)) {
+    return res.status(400).json('Invalid email');
+  }
+  if (!isPasswordValid('password' in req)) {
+    return res.status(400).json('Invalid password');
+  }
+
+  next();
+};
+
+const getTalkers = async () => {
+  const pathTalkers = path.resolve(
+    __dirname,
+    '.',
+    'talker.json',
+  );
+
+  const talkers = JSON.parse(await fs.readFile(pathTalkers, 'utf-8'));
+  return talkers;
 };
 
 // Part of the solution can be found here
@@ -34,17 +56,25 @@ app.listen(PORT, () => {
 });
 
 app.get('/talker', async (req, res) => {
-  const pathTalkers = path.resolve(
-    __dirname,
-    '.',
-    'talker.json',
-  );
-
-  const talkers = JSON.parse(await fs.readFile(pathTalkers, 'utf-8'));
+  const talkers = await getTalkers();
   res.status(HTTP_OK_STATUS).json(talkers);
 });
 
-app.post('/login', (req, res) => {
+app.get('/talker/:id', async (req, res) => {
+  const { id } = req.params;
+  const talkers = await getTalkers();
+  const selectedTalker = talkers
+    .find((talker) => talker.id === Number(id));
+  if (selectedTalker) {
+    return res.status(HTTP_OK_STATUS).json(selectedTalker);
+  }
+
+  return res.status(404).json({
+    message: 'Pessoa palestrante não encontrada',
+  });
+});
+
+app.post('/login', validateLogin, (req, res) => {
   const randomToken = (generateRandomToken() + generateRandomToken()).substring(1, 17);
   res.status(HTTP_OK_STATUS).json({
     token: randomToken,
