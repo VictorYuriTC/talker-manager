@@ -7,43 +7,53 @@ const app = express();
 app.use(bodyParser.json());
 
 const HTTP_OK_STATUS = 200;
-const HTTP_OK_BAD_REQUEST = 400;
+
+const HTTP_BAD_REQUEST = 400;
+const HTTP_UNAUTHORIZED = 401;
 const HTTP_NOT_FOUND = 404;
+
 const PORT = '3000';
 
 const isEmailValid = (email) => /\S+@\S+\.\S+/.test(email);
 const isPasswordValid = (password) => password.length >= 6;
-const NO_EMAIL_MESSAGE = {
+const isValidToken = (token) => token.length === 16;
+
+const TALKER_NOT_FOUND_MSG = {
+  message: 'Pessoa palestrante não encontrada',
+};
+
+const INVALID_TOKEN_MSG = {
+  message: 'Token inválido',
+};
+
+const TOKEN_NOT_FOUND = {
+  message: 'Token não encontrado',
+};
+
+const NO_EMAIL_MSG = {
   message: 'O campo "email" é obrigatório',
 };
-const INVALID_EMAIL_MESSAGE = {
+const INVALID_EMAIL_MSG = {
   message: 'O "email" deve ter o formato "email@email.com"',
 };
-const NO_PASSWORD_MESSAGE = {
+const NO_PASSWORD_MSG = {
   message: 'O campo "password" é obrigatório',
 };
-const INVALID_PASSWORD_MESSAGE = {
+const INVALID_PASSWORD_MSG = {
   message: 'O "password" deve ter pelo menos 6 caracteres',
 };
 
 const validateLogin = (req, res, next) => {
   const { email } = req.body;
   const { password } = req.body;
-  if (!email) {
-    return res.status(HTTP_OK_BAD_REQUEST).json(NO_EMAIL_MESSAGE);
-  }
+  if (!email) return res.status(HTTP_BAD_REQUEST).json(NO_EMAIL_MSG);
 
-  if (!isEmailValid(email)) {
-    return res.status(HTTP_OK_BAD_REQUEST).json(INVALID_EMAIL_MESSAGE);
-  }
+  if (!isEmailValid(email)) return res.status(HTTP_BAD_REQUEST).json(INVALID_EMAIL_MSG);
+  
+  if (!password) res.status(HTTP_BAD_REQUEST).json(NO_PASSWORD_MSG);
 
-  if (!password) {
-    return res.status(HTTP_OK_BAD_REQUEST).json(NO_PASSWORD_MESSAGE);
-  }
-
-  if (!isPasswordValid(password)) {
-    return res.status(HTTP_OK_BAD_REQUEST).json(INVALID_PASSWORD_MESSAGE);
-  }
+  if (!isPasswordValid(password)) res.status(HTTP_BAD_REQUEST).json(INVALID_PASSWORD_MSG);
+  
   next();
 };
 
@@ -85,9 +95,7 @@ app.get('/talker/:id', async (req, res) => {
     return res.status(HTTP_OK_STATUS).json(selectedTalker);
   }
 
-  return res.status(HTTP_NOT_FOUND).json({
-    message: 'Pessoa palestrante não encontrada',
-  });
+  return res.status(HTTP_NOT_FOUND).json(TALKER_NOT_FOUND_MSG);
 });
 
 app.post('/login', validateLogin, (req, res) => {
@@ -95,4 +103,18 @@ app.post('/login', validateLogin, (req, res) => {
   res.status(HTTP_OK_STATUS).json({
     token: randomToken,
   });
+});
+
+app.post('/talker', (req, res) => {
+  const { authorization } = req.headers;
+  
+  if (!authorization) {
+    return res.status(HTTP_UNAUTHORIZED).json(TOKEN_NOT_FOUND);
+  }
+
+  if (!isValidToken(authorization)) {
+    return res.status(HTTP_UNAUTHORIZED).json(INVALID_TOKEN_MSG);
+  }
+
+  return res.status(201).json('foi');
 });
