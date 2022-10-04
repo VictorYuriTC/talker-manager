@@ -19,6 +19,8 @@ const isPasswordValid = (password) => password.length >= 6;
 const isValidToken = (token) => token.length === 16;
 const isValidName = (name) => name >= 3;
 const isValidAge = (age) => age >= 18;
+const isValidWatchedAt = (watchedAt) => Date.parse(watchedAt);
+const isValidRate = (rate) => rate >= 1 && rate >= 5;
 
 const TALKER_NOT_FOUND_MSG = {
   message: 'Pessoa palestrante não encontrada',
@@ -46,6 +48,26 @@ const NO_AGE_MSG = {
 
 const INVALID_AGE_MSG = {
   message: 'A pessoa palestrante deve ser maior de idade',
+};
+
+const NO_TALK_MSG = {
+  message: 'O campo "talk" é obrigatório',
+};
+
+const NO_WATCHED_AT_MSG = {
+  message: 'O campo "watchedAt" é obrigatório',
+};
+
+const INVALID_WATCHED_AT_MSG = {
+  message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"',
+};
+
+const NO_RATE_MSG = {
+  message: 'O campo "rate" é obrigatório',
+};
+
+const INVALID_RATE_MSG = {
+  message: 'O campo "rate" deve ser um inteiro de 1 à 5',
 };
 
 const NO_EMAIL_MSG = {
@@ -125,12 +147,22 @@ app.post('/login', validateLogin, (req, res) => {
 
 app.post('/talker', (req, res) => {
   const { authorization } = req.headers;
-  const { name, age } = req.body;
+  const { name, age, talk } = req.body;
   
   if (!authorization) return res.status(HTTP_UNAUTHORIZED).json(TOKEN_NOT_FOUND);
   if (!isValidToken(authorization)) return res.status(HTTP_UNAUTHORIZED).json(INVALID_TOKEN_MSG);
+
   if (!age) return res.status(HTTP_BAD_REQUEST).json(NO_AGE_MSG);
   if (!isValidAge(age)) return res.status(HTTP_BAD_REQUEST).json(INVALID_AGE_MSG);
+
+  if (!talk) return res.status(HTTP_BAD_REQUEST).json(NO_TALK_MSG);
+
+  //
+  if (!talk.watchedAt) return res.status(HTTP_BAD_REQUEST).json(NO_WATCHED_AT_MSG);
+
+  if (!talk.rate) return res.status(HTTP_BAD_REQUEST).json(NO_RATE_MSG);
+  if (!isValidRate(talk.rate)) return res.status(HTTP_BAD_REQUEST).json(INVALID_RATE_MSG);
+
   if (!name) return res.status(HTTP_BAD_REQUEST).json(NO_NAME_MSG);
   if (!isValidName(name)) return res.status(HTTP_BAD_REQUEST).json(INVALID_NAME_MSG);
 });
