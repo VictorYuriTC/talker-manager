@@ -17,6 +17,8 @@ const PORT = '3000';
 const isEmailValid = (email) => /\S+@\S+\.\S+/.test(email);
 const isPasswordValid = (password) => password.length >= 6;
 const isValidToken = (token) => token.length === 16;
+const isValidName = (name) => name >= 3;
+const isValidAge = (age) => age >= 18;
 
 const TALKER_NOT_FOUND_MSG = {
   message: 'Pessoa palestrante não encontrada',
@@ -28,6 +30,22 @@ const INVALID_TOKEN_MSG = {
 
 const TOKEN_NOT_FOUND = {
   message: 'Token não encontrado',
+};
+
+const NO_NAME_MSG = {
+  message: 'O campo "name" é obrigatório',
+};
+
+const INVALID_NAME_MSG = {
+  message: 'O "name" deve ter pelo menos 3 caracteres',
+};
+
+const NO_AGE_MSG = {
+  message: 'O campo "age" é obrigatório',
+};
+
+const INVALID_AGE_MSG = {
+  message: 'A pessoa palestrante deve ser maior de idade',
 };
 
 const NO_EMAIL_MSG = {
@@ -107,14 +125,12 @@ app.post('/login', validateLogin, (req, res) => {
 
 app.post('/talker', (req, res) => {
   const { authorization } = req.headers;
+  const { name, age } = req.body;
   
-  if (!authorization) {
-    return res.status(HTTP_UNAUTHORIZED).json(TOKEN_NOT_FOUND);
-  }
-
-  if (!isValidToken(authorization)) {
-    return res.status(HTTP_UNAUTHORIZED).json(INVALID_TOKEN_MSG);
-  }
-
-  return res.status(201).json('foi');
+  if (!authorization) return res.status(HTTP_UNAUTHORIZED).json(TOKEN_NOT_FOUND);
+  if (!isValidToken(authorization)) return res.status(HTTP_UNAUTHORIZED).json(INVALID_TOKEN_MSG);
+  if (!age) return res.status(HTTP_BAD_REQUEST).json(NO_AGE_MSG);
+  if (!isValidAge(age)) return res.status(HTTP_BAD_REQUEST).json(INVALID_AGE_MSG);
+  if (!name) return res.status(HTTP_BAD_REQUEST).json(NO_NAME_MSG);
+  if (!isValidName(name)) return res.status(HTTP_BAD_REQUEST).json(INVALID_NAME_MSG);
 });
