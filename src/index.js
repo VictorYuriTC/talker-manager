@@ -7,27 +7,43 @@ const app = express();
 app.use(bodyParser.json());
 
 const HTTP_OK_STATUS = 200;
+const HTTP_OK_BAD_REQUEST = 400;
+const HTTP_NOT_FOUND = 404;
 const PORT = '3000';
-
-const validUser = {
-  email: 'email@email.com',
-  password: '123456',
-};
 
 const isEmailValid = (email) => /\S+@\S+\.\S+/.test(email);
 const isPasswordValid = (password) => password.length >= 6;
+const NO_EMAIL_MESSAGE = {
+  message: 'O campo "email" é obrigatório',
+};
+const INVALID_EMAIL_MESSAGE = {
+  message: 'O "email" deve ter o formato "email@email.com"',
+};
+const NO_PASSWORD_MESSAGE = {
+  message: 'O campo "password" é obrigatório',
+};
+const INVALID_PASSWORD_MESSAGE = {
+  message: 'O "password" deve ter pelo menos 6 caracteres',
+};
 
-const validateLogin = async (req, res, next) => {
-  if ('email' in req === '' || 'email' in req === undefined) {
-    return res.status(400).json('oi');
-  }
-  if (!isEmailValid('email' in req)) {
-    return res.status(400).json('Invalid email');
-  }
-  if (!isPasswordValid('password' in req)) {
-    return res.status(400).json('Invalid password');
+const validateLogin = (req, res, next) => {
+  const { email } = req.body;
+  const { password } = req.body;
+  if (!email) {
+    return res.status(HTTP_OK_BAD_REQUEST).json(NO_EMAIL_MESSAGE);
   }
 
+  if (!isEmailValid(email)) {
+    return res.status(HTTP_OK_BAD_REQUEST).json(INVALID_EMAIL_MESSAGE);
+  }
+
+  if (!password) {
+    return res.status(HTTP_OK_BAD_REQUEST).json(NO_PASSWORD_MESSAGE);
+  }
+
+  if (!isPasswordValid(password)) {
+    return res.status(HTTP_OK_BAD_REQUEST).json(INVALID_PASSWORD_MESSAGE);
+  }
   next();
 };
 
@@ -69,7 +85,7 @@ app.get('/talker/:id', async (req, res) => {
     return res.status(HTTP_OK_STATUS).json(selectedTalker);
   }
 
-  return res.status(404).json({
+  return res.status(HTTP_NOT_FOUND).json({
     message: 'Pessoa palestrante não encontrada',
   });
 });
