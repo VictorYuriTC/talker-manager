@@ -79,9 +79,9 @@ const validateLogin = (req, res, next) => {
 
   if (!isEmailValid(email)) return res.status(HTTP_BAD_REQUEST).json(INVALID_EMAIL_MSG);
   
-  if (!password) res.status(HTTP_BAD_REQUEST).json(NO_PASSWORD_MSG);
+  if (!password) return res.status(HTTP_BAD_REQUEST).json(NO_PASSWORD_MSG);
 
-  if (!isPasswordValid(password)) res.status(HTTP_BAD_REQUEST).json(INVALID_PASSWORD_MSG);
+  if (!isPasswordValid(password)) return res.status(HTTP_BAD_REQUEST).json(INVALID_PASSWORD_MSG);
   
   next();
 };
