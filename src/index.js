@@ -52,7 +52,7 @@ app.listen(PORT, () => {
   console.log('Online');
 });
 
-app.get('/talker', validateToken, async (req, res) => {
+app.get('/talker', async (req, res) => {
   const talkers = await getTalkers();
   res.status(HTTP_OK_STATUS).json(talkers);
 });
@@ -60,9 +60,20 @@ app.get('/talker', validateToken, async (req, res) => {
 // Part of the solution can be found at:
 // https://stackoverflow.com/questions/17007997/how-to-access-the-get-parameters-after-in-express
 
-app.get('/talker/:id', validateToken, async (req, res) => {
-  const { id } = req.params;
+app.get('/talker/search/', validateToken, async (req, res) => {
   const { q } = req.query;
+
+  const talkers = await getTalkers();
+
+  if (q !== undefined) {
+    const foundTalker = talkers
+      .filter((talker) => talker.name.includes(q));
+    return res.status(HTTP_OK_STATUS).json(foundTalker);
+  }
+});
+
+app.get('/talker/:id', async (req, res) => {
+  const { id } = req.params;
   const talkers = await getTalkers();
   const selectedTalker = talkers
     .find((talker) => talker.id === Number(id));
@@ -70,13 +81,7 @@ app.get('/talker/:id', validateToken, async (req, res) => {
   if (selectedTalker) {
     return res.status(HTTP_OK_STATUS).json(selectedTalker);
   }
-
-  if (q !== undefined) {
-    const foundTalker = talkers
-      .filter((talker) => talker.name.includes(q));
-    return res.status(HTTP_OK_STATUS).json(foundTalker);
-  }
-
+  
   return res.status(HTTP_NOT_FOUND).json(TALKER_NOT_FOUND_MSG);
 });
 
@@ -99,7 +104,7 @@ app.post('/talker',
 
     const newTalker = { ...req.body, id };
     const talkers = await getTalkers();
-    
+
     talkers.push(newTalker);
     await fs.writeFile(pathTalkers, JSON.stringify(talkers));
     res.status(HTTP_CREATED).json(newTalker);
