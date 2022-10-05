@@ -18,6 +18,7 @@ app.use(bodyParser.json());
 
 const HTTP_OK_STATUS = 200;
 const HTTP_CREATED = 201;
+const HTTP_NO_CONTENT = 204;
 
 const HTTP_NOT_FOUND = 404;
 
@@ -115,4 +116,18 @@ async (req, res) => {
 
   await fs.writeFile(pathTalkers, JSON.stringify(talkers));
   res.status(HTTP_OK_STATUS).json(updatedTalker);
+});
+
+app.delete('/talker/:id', validateToken, async (req, res) => {
+  const { id } = req.params;
+
+  const talkers = await getTalkers();
+  const selectedTalker = talkers
+    .find((talker) => talker.id === Number(id));
+  const selectedTalkerIndex = talkers.indexOf(selectedTalker);
+  talkers.splice(selectedTalkerIndex, 1);
+
+  await fs.writeFile(pathTalkers, JSON.stringify(talkers));
+
+  res.status(HTTP_NO_CONTENT).json();
 });
