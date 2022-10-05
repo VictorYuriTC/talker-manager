@@ -2,7 +2,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs').promises;
 const path = require('path');
-const querystring = require('querystring');
 
 const {
   validateLogin,
@@ -100,6 +99,7 @@ app.post('/talker',
 
     const newTalker = { ...req.body, id };
     const talkers = await getTalkers();
+    
     talkers.push(newTalker);
     await fs.writeFile(pathTalkers, JSON.stringify(talkers));
     res.status(HTTP_CREATED).json(newTalker);
