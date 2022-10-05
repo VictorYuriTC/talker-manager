@@ -7,6 +7,7 @@ const app = express();
 app.use(bodyParser.json());
 
 const HTTP_OK_STATUS = 200;
+const HTTP_CREATED = 201;
 
 const HTTP_BAD_REQUEST = 400;
 const HTTP_UNAUTHORIZED = 401;
@@ -14,13 +15,19 @@ const HTTP_NOT_FOUND = 404;
 
 const PORT = '3000';
 
+// Part of the solution can be found at:
+// https://stackoverflow.com/questions/10194464/javascript-dd-mm-yyyy-date-check
+
 const isEmailValid = (email) => /\S+@\S+\.\S+/.test(email);
 const isPasswordValid = (password) => password.length >= 6;
 const isValidToken = (token) => token.length === 16;
-const isValidName = (name) => name >= 3;
+const isValidName = (name) => name.length >= 3;
 const isValidAge = (age) => age >= 18;
-const isValidWatchedAt = (watchedAt) => Date.parse(watchedAt);
-const isValidRate = (rate) => rate >= 1 && rate >= 5;
+const isValidWatchedAt = (input) => {
+  const reg = /(0[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|1[012])[- /.](19|20)\d\d/;
+  return !!input.match(reg);
+};
+const isValidRate = (rate) => rate >= 1 && rate <= 5;
 
 const TALKER_NOT_FOUND_MSG = {
   message: 'Pessoa palestrante não encontrada',
@@ -97,19 +104,73 @@ const validateLogin = (req, res, next) => {
   next();
 };
 
-const getTalkers = async () => {
-  const pathTalkers = path.resolve(
-    __dirname,
-    '.',
-    'talker.json',
-  );
+const validateToken = (req, res, next) => {
+  const { authorization } = req.headers;
 
+  if (!authorization) return res.status(HTTP_UNAUTHORIZED).json(TOKEN_NOT_FOUND);
+  if (!isValidToken(authorization)) return res.status(HTTP_UNAUTHORIZED).json(INVALID_TOKEN_MSG);
+
+  next();
+};
+
+const validateName = (req, res, next) => {
+  const { name } = req.body;
+
+  if (!name) return res.status(HTTP_BAD_REQUEST).json(NO_NAME_MSG);
+  if (!isValidName(name)) return res.status(HTTP_BAD_REQUEST).json(INVALID_NAME_MSG);
+  next();
+};
+
+const validateAge = (req, res, next) => {
+  const { age } = req.body;
+
+  if (!age) return res.status(HTTP_BAD_REQUEST).json(NO_AGE_MSG);
+  if (!isValidAge(age)) return res.status(HTTP_BAD_REQUEST).json(INVALID_AGE_MSG);
+
+  next();
+};
+
+const validateTalk = (req, res, next) => {
+  const { talk } = req.body;
+  if (!talk) return res.status(HTTP_BAD_REQUEST).json(NO_TALK_MSG);
+
+  next();
+};
+
+const validateTalkWatchedAt = (req, res, next) => {
+  const { talk } = req.body;
+
+  if (!talk.watchedAt) return res.status(HTTP_BAD_REQUEST).json(NO_WATCHED_AT_MSG);
+  if (!isValidWatchedAt(talk.watchedAt)) {
+    return res.status(HTTP_BAD_REQUEST)
+    .json(INVALID_WATCHED_AT_MSG);
+  }
+
+  next();
+};
+
+const validateTalkRate = (req, res, next) => {
+  const { talk } = req.body;
+
+  if (!talk.rate) return res.status(HTTP_BAD_REQUEST).json(NO_RATE_MSG);
+  if (!isValidRate(talk.rate)) return res.status(HTTP_BAD_REQUEST).json(INVALID_RATE_MSG);
+
+  next();
+};
+
+const pathTalkers = path.resolve(
+  __dirname,
+  '.',
+  'talker.json',
+);
+
+const getTalkers = async () => {
   const talkers = JSON.parse(await fs.readFile(pathTalkers, 'utf-8'));
   return talkers;
 };
 
-// Part of the solution can be found here
-// : https://thewebdev.info/2021/10/13/how-to-create-a-random-token-in-javascript/
+// Part of the solution can be found at:
+// https://thewebdev.info/2021/10/13/how-to-create-a-random-token-in-javascript/
 const generateRandomToken = () => Math.random().toString(36).substring(2);
 
 // não remova esse endpoint, e para o avaliador funcionar
@@ -145,24 +206,23 @@ app.post('/login', validateLogin, (req, res) => {
   });
 });
 
-app.post('/talker', (req, res) => {
-  const { authorization } = req.headers;
-  const { name, age, talk } = req.body;
-  
-  if (!authorization) return res.status(HTTP_UNAUTHORIZED).json(TOKEN_NOT_FOUND);
-  if (!isValidToken(authorization)) return res.status(HTTP_UNAUTHORIZED).json(INVALID_TOKEN_MSG);
+app.post('/talker',
+  validateToken,
+  validateName,
+  validateAge,
+  validateTalk,
+  validateTalkWatchedAt,
+  validateTalkRate,
+  async (req, res) => {
+    let id = 5;
 
-  if (!age) return res.status(HTTP_BAD_REQUEST).json(NO_AGE_MSG);
-  if (!isValidAge(age)) return res.status(HTTP_BAD_REQUEST).json(INVALID_AGE_MSG);
+    const newTalker = { ...req.body, id };
+    console.log('body: ', req.body);
+    const talkers = await getTalkers();
+    console.log('talkers: ', talkers);
+    talkers.push(newTalker);
+    await fs.writeFile(pathTalkers, JSON.stringify(talkers));
+    res.status(HTTP_CREATED).json(newTalker);
 
-  if (!talk) return res.status(HTTP_BAD_REQUEST).json(NO_TALK_MSG);
-
-  //
-  if (!talk.watchedAt) return res.status(HTTP_BAD_REQUEST).json(NO_WATCHED_AT_MSG);
-
-  if (!talk.rate) return res.status(HTTP_BAD_REQUEST).json(NO_RATE_MSG);
-  if (!isValidRate(talk.rate)) return res.status(HTTP_BAD_REQUEST).json(INVALID_RATE_MSG);
-
-  if (!name) return res.status(HTTP_BAD_REQUEST).json(NO_NAME_MSG);
-  if (!isValidName(name)) return res.status(HTTP_BAD_REQUEST).json(INVALID_NAME_MSG);
+    id += 1;
 });
