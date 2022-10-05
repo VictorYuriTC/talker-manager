@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs').promises;
 const path = require('path');
+const querystring = require('querystring');
 
 const {
   validateLogin,
@@ -130,4 +131,8 @@ app.delete('/talker/:id', validateToken, async (req, res) => {
   await fs.writeFile(pathTalkers, JSON.stringify(talkers));
 
   res.status(HTTP_NO_CONTENT).json();
+});
+
+app.get('/talker/search?q=searchTerm', validateToken, async (req, res) => {
+
 });
